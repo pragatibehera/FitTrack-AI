@@ -3,7 +3,7 @@ server:
 
 spring:
   datasource:
-    url: jdbc:postgresql://localhost:5432/fitness_user_db
+    url: jdbc:postgresql://${POSTGRES_HOST:localhost}:5432/fitness_user_db
     username: postgres
     password: admin@123
   jpa:
@@ -14,4 +14,4 @@ spring:
 eureka:
   client:
     serviceUrl:
-      defaultZone: http://localhost:8761/eureka/
+      defaultZone: http://${EUREKA_HOST:localhost}:8761/eureka/

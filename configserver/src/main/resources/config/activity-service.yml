@@ -3,10 +3,10 @@ spring:
     name: activity-service
   data:
     mongodb:
-      uri: mongodb://localhost:27017/fitnessactivity
+      uri: mongodb://${MONGO_HOST:localhost}:27017/fitnessactivity
       database: fitnessactivity
   rabbitmq:
-    host: localhost
+    host: ${RABBITMQ_HOST:localhost}
     port: 5672
     username: guest
     password: guest
@@ -17,7 +17,7 @@ server:
 eureka:
   client:
     serviceUrl:
-      defaultZone: http://localhost:8761/eureka/
+      defaultZone: http://${EUREKA_HOST:localhost}:8761/eureka/
 
 rabbitmq:
   exchange:

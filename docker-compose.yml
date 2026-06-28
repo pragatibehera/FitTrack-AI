@@ -1,0 +1,158 @@
+version: '3.8'
+
+services:
+  # ==========================================
+  # INFRASTRUCTURE (Databases, Broker, Auth)
+  # ==========================================
+  postgres:
+    image: postgres:15-alpine
+    container_name: fitness-postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: admin@123
+      POSTGRES_DB: fitness_user_db
+    ports:
+      - "5432:5432"
+    networks:
+      - fitness-network
+    restart: always
+
+  mongodb:
+    image: mongo:6.0
+    container_name: fitness-mongo
+    ports:
+      - "27017:27017"
+    networks:
+      - fitness-network
+    restart: always
+
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: fitness-rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    networks:
+      - fitness-network
+    restart: always
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:23.0.0
+    container_name: fitness-keycloak
+    environment:
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+    command: start-dev
+    ports:
+      - "8181:8080"
+    networks:
+      - fitness-network
+    restart: always
+
+  # ==========================================
+  # SPRING BOOT MICROSERVICES
+  # ==========================================
+  eureka:
+    build: ./eureka
+    container_name: fitness-eureka
+    ports:
+      - "8761:8761"
+    networks:
+      - fitness-network
+    restart: on-failure
+
+  configserver:
+    build: ./configserver
+    container_name: fitness-configserver
+    ports:
+      - "8888:8888"
+    environment:
+      EUREKA_HOST: eureka
+    depends_on:
+      - eureka
+    networks:
+      - fitness-network
+    restart: on-failure
+
+  userservice:
+    build: ./userservice
+    container_name: fitness-userservice
+    environment:
+      EUREKA_HOST: eureka
+      POSTGRES_HOST: postgres
+    depends_on:
+      - eureka
+      - configserver
+      - postgres
+    networks:
+      - fitness-network
+    restart: on-failure
+
+  activityservice:
+    build: ./activityservice
+    container_name: fitness-activityservice
+    environment:
+      EUREKA_HOST: eureka
+      MONGO_HOST: mongodb
+      RABBITMQ_HOST: rabbitmq
+    depends_on:
+      - eureka
+      - configserver
+      - mongodb
+      - rabbitmq
+    networks:
+      - fitness-network
+    restart: on-failure
+
+  aiservice:
+    build: ./aiservice
+    container_name: fitness-aiservice
+    environment:
+      EUREKA_HOST: eureka
+      MONGO_HOST: mongodb
+      RABBITMQ_HOST: rabbitmq
+      GEMINI_API_URL: ${GEMINI_API_URL:-https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-YOUR_API_KEY_HERE}
+    depends_on:
+      - eureka
+      - configserver
+      - mongodb
+      - rabbitmq
+    networks:
+      - fitness-network
+    restart: on-failure
+
+  gateway:
+    build: ./gateway
+    container_name: fitness-gateway
+    ports:
+      - "8080:8080"
+    environment:
+      EUREKA_HOST: eureka
+      KEYCLOAK_HOST: keycloak
+    depends_on:
+      - eureka
+      - configserver
+      - keycloak
+    networks:
+      - fitness-network
+    restart: on-failure
+
+  # ==========================================
+  # FRONTEND (Vite / React)
+  # ==========================================
+  frontend:
+    build: ./fitness-app-frontend
+    container_name: fitness-frontend
+    ports:
+      - "5173:80"
+    networks:
+      - fitness-network
+    restart: always
+
+networks:
+  fitness-network:
+    driver: bridge

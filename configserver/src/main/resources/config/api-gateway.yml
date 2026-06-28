@@ -5,7 +5,8 @@ spring:
     oauth2:
       resourceserver:
         jwt:
-          jwk-set-uri: http://localhost:8181/realms/fitness-oauth2/protocol/openid-connect/certs
+          jwk-set-uri: http://${KEYCLOAK_HOST:localhost}:8181/realms/fitness-oauth2/protocol/openid-connect/certs
+          issuer-uri: http://localhost:8181/realms/fitness-oauth2
   cloud:
     gateway:
       routes:
@@ -30,4 +31,4 @@ server:
 eureka:
   client:
     serviceUrl:
-      defaultZone: http://localhost:8761/eureka/
+      defaultZone: http://${EUREKA_HOST:localhost}:8761/eureka/
